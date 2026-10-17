@@ -56,8 +56,8 @@ export function AnalyzePage() {
     <div className="max-w-3xl">
       <h1 className="text-[28px] sm:text-[34px] leading-tight font-semibold tracking-tight">Is this email safe?</h1>
       <p className="mt-2 text-muted max-w-xl">
-        Check a sender address, domain, link, IP or file hash. Or drop the .eml file the user reported, and every
-        source is queried at once.
+        Paste just the sender's address to check who is behind it. You can also check a domain, link, IP or file
+        hash, or drop the whole .eml file for the full picture.
       </p>
 
       <div
@@ -110,6 +110,20 @@ export function AnalyzePage() {
             onChange={(e) => { const f = e.target.files?.[0]; if (f) run.mutate(f); e.target.value = ""; }}
           />
         </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+        <span className="text-muted">Try an example:</span>
+        {["billing@paypa1-secure.com", "x7k2q9p@gmail.com", "micros0ft-login.com"].map((ex) => (
+          <button
+            key={ex}
+            type="button"
+            onClick={() => { setValue(ex); run.mutate(ex); }}
+            className="rounded border border-line px-2 py-0.5 data hover:border-lens hover:text-lens"
+          >
+            {ex}
+          </button>
+        ))}
       </div>
 
       {run.isPending && <p className="mt-4 text-sm text-muted" role="status">Querying sources. Free-tier lookups can take a few seconds.</p>}

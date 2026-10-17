@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 
 import httpx
 
-USER_AGENT = "PhishLens/0.1 (self-hosted email triage)"
+USER_AGENT = "PhishLens/0.2 (self-hosted email triage)"
 
 
 class UnsafeURLError(ValueError):

@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 
 import httpx
 
+from app.analysis.address import analyse_address
 from app.analysis.domain import build_profile
 from app.core.cache import Cache
 from app.core.config import Settings
@@ -13,6 +14,7 @@ from app.core.http import UnsafeURLError, assert_public_url
 from app.core.util import classify_input, domain_of_email, refang, registrable_domain
 from app.enrichers.registry import run_enrichers
 from app.models.schemas import (
+    AddressProfile,
     DomainProfile,
     Indicator,
     IndicatorType,
@@ -67,6 +69,19 @@ async def _profiles(
     return profiles, results
 
 
+def _infra_indicators(profiles: list[DomainProfile]) -> list[Indicator]:
+    """Mail-server and website IPs of sender domains. Big shared providers (Microsoft,
+    Google...) are skipped: their reputation says nothing about this sender."""
+    out: list[Indicator] = []
+    for p in profiles:
+        if p.role not in ("sender", "input", "reply_to") or p.is_freemail:
+            continue
+        if not p.large_provider:
+            out += [Indicator(type=IndicatorType.ip, value=ip, origin="mx") for ip in p.mx_ips[:2]]
+        out += [Indicator(type=IndicatorType.ip, value=ip, origin="web") for ip in p.web_ips[:1]]
+    return out
+
+
 def _finish(
     *,
     input_type: str,
@@ -78,6 +93,7 @@ def _finish(
     parsed: ParsedEmail | None = None,
     links: list[Link] | None = None,
     notes: list[str] | None = None,
+    address: AddressProfile | None = None,
 ) -> Report:
     links = links if links is not None else (parsed.links if parsed else [])
     attachments = parsed.attachments if parsed else []
@@ -85,7 +101,7 @@ def _finish(
     signals, verdict = evaluate(
         input_type=input_type, headers=headers, links=links,
         attachments=attachments, domains=profiles, results=results,
-        body_text=parsed.text_body if parsed else "",
+        body_text=parsed.text_body if parsed else "", address=address,
     )
     preview = None
     if parsed and parsed.text_body:
@@ -101,6 +117,7 @@ def _finish(
         links=links,
         attachments=attachments,
         domains=profiles,
+        address=address,
         indicators=indicators,
         results=results,
         signals=signals,
@@ -149,8 +166,8 @@ async def analyze_value(value: str, settings: Settings, client: httpx.AsyncClien
     elif kind == "hash":
         indicators.append(Indicator(type=IndicatorType.hash, value=clean.lower(), origin="input"))
 
-    indicators = _dedupe(indicators)
     profiles, local_results = await _profiles(hosts, settings, client, cache)
+    indicators = _dedupe(indicators + _infra_indicators(profiles))
     intel = await run_enrichers(indicators, settings, client, cache)
     return _finish(
         input_type=kind,
@@ -160,6 +177,7 @@ async def analyze_value(value: str, settings: Settings, client: httpx.AsyncClien
         indicators=indicators,
         results=local_results + intel,
         links=links,
+        address=analyse_address(clean) if kind == "email_address" else None,
     )
 
 
@@ -211,9 +229,8 @@ async def analyze_eml(raw: bytes, filename: str, settings: Settings, client: htt
         indicators.append(Indicator(type=IndicatorType.domain, value=registrable_domain(reply_dom), origin="header"))
     if h.from_address:
         indicators.append(Indicator(type=IndicatorType.email, value=h.from_address, origin="header"))
-    indicators = _dedupe(indicators)
-
     profiles, local_results = await _profiles(hosts, settings, client, cache)
+    indicators = _dedupe(indicators + _infra_indicators(profiles))
     intel = await run_enrichers(indicators, settings, client, cache)
 
     notes = ["Attachments were hashed in memory and discarded; file contents are never stored or opened."]
@@ -228,4 +245,5 @@ async def analyze_eml(raw: bytes, filename: str, settings: Settings, client: htt
         results=local_results + intel,
         parsed=parsed,
         notes=notes,
+        address=analyse_address(h.from_address) if h.from_address else None,
     )

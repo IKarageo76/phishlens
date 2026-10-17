@@ -114,7 +114,23 @@ class DomainProfile(BaseModel):
     lookalike_of: str | None = None
     lookalike_reason: str | None = None
     lookalike_strong: bool = False
+    exists: bool | None = None
+    null_mx: bool = False
+    mail_provider: str | None = None
+    large_provider: bool = False
+    mx_ips: list[str] = Field(default_factory=list)
+    web_ips: list[str] = Field(default_factory=list)
+    has_website: bool | None = None
     checks_run: list[str] = Field(default_factory=list)
+
+
+class AddressProfile(BaseModel):
+    address: str
+    local_part: str
+    role_word: str | None = None
+    plus_tag: str | None = None
+    looks_random: bool = False
+    random_reasons: list[str] = Field(default_factory=list)
 
 
 class Signal(BaseModel):
@@ -152,6 +168,7 @@ class Report(BaseModel):
     links: list[Link] = Field(default_factory=list)
     attachments: list[Attachment] = Field(default_factory=list)
     domains: list[DomainProfile] = Field(default_factory=list)
+    address: AddressProfile | None = None
     indicators: list[Indicator] = Field(default_factory=list)
     results: list[SourceResult] = Field(default_factory=list)
     signals: list[Signal] = Field(default_factory=list)

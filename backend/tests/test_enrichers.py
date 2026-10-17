@@ -37,7 +37,7 @@ async def test_all_sources_for_a_url(keyed_settings, cache):
 async def test_missing_keys_are_reported_as_skipped(offline_settings, cache):
     async with httpx.AsyncClient() as client:
         results = await run_enrichers([ind("ip", "194.0.234.10")], offline_settings, client, cache)
-    assert {r.source for r in results} == {"virustotal", "abuseipdb", "threatfox"}
+    assert {r.source for r in results} == {"virustotal", "abuseipdb", "threatfox", "spamhaus", "ipinfo"}
     assert all(r.status == SourceStatus.skipped and "no API key" in r.summary for r in results)
 
 

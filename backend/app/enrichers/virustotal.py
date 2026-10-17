@@ -24,6 +24,10 @@ class VirusTotal(Enricher):
     def api_key(self) -> str:
         return self.settings.vt_api_key
 
+    @property
+    def budget(self) -> int | None:
+        return self.settings.vt_max_lookups
+
     def _paths(self, ind: Indicator) -> tuple[str, str]:
         if ind.type == IndicatorType.url:
             vid = base64.urlsafe_b64encode(ind.value.encode()).decode().strip("=")

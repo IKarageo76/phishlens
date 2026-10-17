@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.2.0 (2026-10-17)
+
+- 8 new sources: Google Safe Browsing, Spamhaus DQS (ZEN, DBL, ZRD), AlienVault OTX, PhishStats,
+  StopForumSpam, CIRCL hashlookup, Shodan InternetDB, IPinfo Lite; five of them need no key
+- Sender-address checks: mail provider from MX, null MX, missing domain, no website,
+  role names on free-mail, machine-generated local parts
+- Mail-server and website IPs are checked with the IP sources (skipped for big shared providers)
+- Known-good attachments (CIRCL) no longer count as risky
+- New report panels: sender address and IP addresses
+- `DISABLED_SOURCES` setting; per-source lookup budgets
+
 ## v0.1.0 (2026-10-17)
 
 First public release.

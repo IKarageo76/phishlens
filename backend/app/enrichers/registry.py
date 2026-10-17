@@ -12,11 +12,20 @@ from app.enrichers.abusech import MalwareBazaar, ThreatFox, URLhaus
 from app.enrichers.abuseipdb import AbuseIPDB
 from app.enrichers.base import Enricher
 from app.enrichers.hibp import HaveIBeenPwned
+from app.enrichers.infra import CIRCLHashlookup, InternetDB, IPinfo
+from app.enrichers.otx import OTX
+from app.enrichers.phishstats import PhishStats
+from app.enrichers.safebrowsing import SafeBrowsing
+from app.enrichers.spamhaus import Spamhaus
+from app.enrichers.stopforumspam import StopForumSpam
 from app.enrichers.urlscan import URLScan
 from app.enrichers.virustotal import VirusTotal
 from app.models.schemas import Indicator, SourceResult, SourceStatus
 
-ENRICHERS: list[type[Enricher]] = [VirusTotal, AbuseIPDB, URLScan, URLhaus, ThreatFox, MalwareBazaar, HaveIBeenPwned]
+ENRICHERS: list[type[Enricher]] = [
+    VirusTotal, AbuseIPDB, URLScan, URLhaus, ThreatFox, MalwareBazaar, SafeBrowsing, Spamhaus,
+    OTX, PhishStats, StopForumSpam, HaveIBeenPwned, CIRCLHashlookup, InternetDB, IPinfo,
+]
 
 
 def build_enrichers(settings: Settings) -> list[Enricher]:
@@ -40,10 +49,11 @@ async def run_enrichers(
     results: list[SourceResult] = []
     jobs: list[tuple[Enricher, Indicator]] = []
     budget_used: dict[str, int] = defaultdict(int)
-    budgets = {"virustotal": settings.vt_max_lookups}
     over_budget: dict[str, list[str]] = defaultdict(list)
 
     for enricher in enrichers:
+        if enricher.disabled():
+            continue
         applicable = [i for i in indicators if enricher.supports(i)]
         if not applicable:
             continue
@@ -56,7 +66,7 @@ async def run_enrichers(
                                         summary="privacy mode: full email addresses are not sent to third parties"))
             continue
         for ind in applicable:
-            limit = budgets.get(enricher.name)
+            limit = enricher.budget
             cached = await cache.get(f"{enricher.name}:{ind.key}")
             if cached is not None:
                 result = SourceResult.model_validate(cached)
@@ -80,8 +90,10 @@ async def run_enrichers(
             return enricher.result(ind, SourceStatus.error, reason)
         except httpx.HTTPError as exc:
             return enricher.result(ind, SourceStatus.error, f"network error: {type(exc).__name__}")
-        except (ValueError, KeyError, TypeError) as exc:
+        except (ValueError, KeyError, TypeError, AttributeError) as exc:
             return enricher.result(ind, SourceStatus.error, f"unexpected response: {type(exc).__name__}")
+        except Exception as exc:  # noqa: BLE001 - one broken source must never break an analysis
+            return enricher.result(ind, SourceStatus.error, f"source failed: {type(exc).__name__}")
         if result.status in (SourceStatus.hit, SourceStatus.clean, SourceStatus.info):
             await cache.set(f"{enricher.name}:{ind.key}", result.model_dump(mode="json"), settings.cache_ttl_seconds)
         return result

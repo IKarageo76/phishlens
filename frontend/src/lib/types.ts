@@ -23,13 +23,16 @@ export interface DomainProfile {
   mx: string[]; spf: string | null; dmarc: string | null; dmarc_policy: string | null;
   created: string | null; age_days: number | null; registrar: string | null;
   is_freemail: boolean; is_disposable: boolean; lookalike_of: string | null; lookalike_reason: string | null; lookalike_strong: boolean;
+  exists: boolean | null; null_mx: boolean; mail_provider: string | null; large_provider: boolean;
+  mx_ips: string[]; web_ips: string[]; has_website: boolean | null;
   checks_run: string[];
 }
+export interface AddressProfile { address: string; local_part: string; role_word: string | null; plus_tag: string | null; looks_random: boolean; random_reasons: string[] }
 export interface Signal { id: string; label: string; weight: number; evidence: string; source: string }
 export interface Verdict { score: number; label: VerdictLabel; confidence: "low" | "medium" | "high"; sources_run: number; sources_skipped: number; hard_override: boolean; reasons: string[] }
 export interface Report {
   id: string; created_at: string; input_type: "email_address" | "domain" | "url" | "ip" | "hash" | "eml";
-  input_value: string; title: string; headers: Headers | null; body_preview: string | null;
+  input_value: string; title: string; headers: Headers | null; body_preview: string | null; address: AddressProfile | null;
   links: Link[]; attachments: Attachment[]; domains: DomainProfile[]; indicators: Indicator[];
   results: SourceResult[]; signals: Signal[]; verdict: Verdict; notes: string[];
 }

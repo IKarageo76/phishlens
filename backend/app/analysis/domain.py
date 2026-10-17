@@ -10,6 +10,7 @@ import dns.resolver
 import httpx
 
 from app.analysis.lookalike import find_lookalike
+from app.analysis.mailprovider import identify
 from app.core.cache import Cache
 from app.core.config import Settings
 from app.core.http import UnsafeURLError, assert_public_url
@@ -35,6 +36,17 @@ async def _txt(resolver: dns.asyncresolver.Resolver, name: str) -> tuple[list[st
     return ["".join(part.decode("utf-8", "replace") for part in r.strings) for r in answer], True
 
 
+async def _addresses(resolver: dns.asyncresolver.Resolver, name: str) -> list[str]:
+    """A then AAAA records; empty on any failure (this is context, not a verdict)."""
+    for rtype in ("A", "AAAA"):
+        try:
+            answer = await resolver.resolve(name, rtype)
+            return [r.address for r in answer][:3]
+        except (dns.exception.DNSException, OSError):
+            continue
+    return []
+
+
 async def mail_dns(domain: str) -> dict:
     resolver = dns.asyncresolver.Resolver()
     resolver.lifetime = 4.0
@@ -48,8 +60,17 @@ async def mail_dns(domain: str) -> dict:
         pass
     except (dns.exception.DNSException, OSError):
         out["ok"] = False
-    (txt, ok1), (dmarc, ok2) = await asyncio.gather(_txt(resolver, domain), _txt(resolver, f"_dmarc.{domain}"))
+    if out["mx"] == [""]:
+        out["mx"], out["null_mx"] = [], True  # RFC 7505: the domain accepts no mail
+    (txt, ok1), (dmarc, ok2), web = await asyncio.gather(
+        _txt(resolver, domain), _txt(resolver, f"_dmarc.{domain}"), _addresses(resolver, domain),
+    )
     out["ok"] = out["ok"] and ok1 and ok2
+    out["web_ips"] = web
+    mx_ips: list[str] = []
+    for host in out["mx"][:2]:
+        mx_ips += (await _addresses(resolver, host))[:1]
+    out["mx_ips"] = list(dict.fromkeys(mx_ips))
     out["spf"] = next((t for t in txt if t.lower().startswith("v=spf1")), None)
     record = next((t for t in dmarc if t.lower().startswith("v=dmarc1")), None)
     out["dmarc"] = record
@@ -126,18 +147,29 @@ async def build_profile(
     elif with_mail_dns and settings.dns_enabled:
         profile.mx, profile.spf = data["mx"], data["spf"]
         profile.dmarc, profile.dmarc_policy = data["dmarc"], data["dmarc_policy"]
+        profile.null_mx = bool(data.get("null_mx"))
+        profile.exists = not data.get("nxdomain")
+        profile.mx_ips = data.get("mx_ips", [])
+        profile.web_ips = data.get("web_ips", [])
+        profile.has_website = bool(profile.web_ips)
+        profile.mail_provider, profile.large_provider = identify(profile.mx)
+        if profile.mx and not profile.mail_provider:
+            profile.mail_provider = "self-hosted or unknown provider"
         profile.checks_run.append("dns")
         parts = [
-            f"MX: {len(profile.mx)} record(s)" if profile.mx else "no MX record",
+            "null MX (accepts no mail)" if profile.null_mx else f"MX: {len(profile.mx)} record(s)" if profile.mx else "no MX record",
             "SPF present" if profile.spf else "no SPF",
             f"DMARC p={profile.dmarc_policy}" if profile.dmarc else "no DMARC",
+            f"mail by {profile.mail_provider}" if profile.mail_provider else None,
+            "website resolves" if profile.has_website else "no website (no A/AAAA record)",
         ]
+        parts = [p for p in parts if p]
         if data.get("nxdomain"):
             parts = ["domain does not exist (NXDOMAIN)"]
         results.append(
             SourceResult(
                 source="dns", indicator=indicator, status=SourceStatus.info, summary=", ".join(parts),
-                details={"mx": profile.mx, "spf": profile.spf, "dmarc": profile.dmarc}, cached=cached,
+                details={"mx": profile.mx, "spf": profile.spf, "dmarc": profile.dmarc, "provider": profile.mail_provider}, cached=cached,
             )
         )
 

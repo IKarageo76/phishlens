@@ -12,6 +12,18 @@ signals:
     label: Indicator is known malicious
     weight: 60
     hard_override: true      # forces a Malicious verdict regardless of credits
+  phishing_db:
+    label: Reported in a phishing database
+    weight: 30
+  zero_reputation:
+    label: Domain first seen on the internet in the last 24 hours
+    weight: 25
+  spamhaus_listed:
+    label: Listed by Spamhaus
+    weight: 25
+  sender_domain_missing:
+    label: Sender domain does not exist
+    weight: 30
   phishing_page:
     label: Linked page previously scanned as phishing
     weight: 30
@@ -45,6 +57,30 @@ signals:
   newish_domain:
     label: Domain registered less than 90 days ago
     weight: 10
+  null_mx:
+    label: Sender domain accepts no mail (null MX)
+    weight: 20
+  spam_reports:
+    label: Address or IP reported for spam
+    weight: 15
+  no_mx:
+    label: Sender domain has no mail server
+    weight: 15
+  otx_pulses:
+    label: Mentioned in community threat reports (OTX)
+    weight: 10
+  risky_host:
+    label: Host tagged as compromised or malicious (Shodan)
+    weight: 10
+  role_on_freemail:
+    label: Role or company-style address on free-mail
+    weight: 10
+  random_local_part:
+    label: Address looks machine-generated
+    weight: 10
+  no_website:
+    label: Sender domain has no website
+    weight: 5
   vt_suspicious:
     label: Some security engines flag an indicator
     weight: 10

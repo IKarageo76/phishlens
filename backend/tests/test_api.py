@@ -10,7 +10,9 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path}/test.db")
     monkeypatch.setenv("DNS_ENABLED", "false")
     monkeypatch.setenv("RDAP_ENABLED", "false")
-    for key in ("VT_API_KEY", "ABUSEIPDB_API_KEY", "URLSCAN_API_KEY", "ABUSECH_AUTH_KEY", "HIBP_API_KEY"):
+    monkeypatch.setenv("DISABLED_SOURCES", "otx,stopforumspam,phishstats,circl,internetdb")
+    for key in ("VT_API_KEY", "ABUSEIPDB_API_KEY", "URLSCAN_API_KEY", "ABUSECH_AUTH_KEY", "HIBP_API_KEY",
+                "OTX_API_KEY", "GSB_API_KEY", "SPAMHAUS_DQS_KEY", "PHISHSTATS_API_KEY", "IPINFO_TOKEN"):
         monkeypatch.setenv(key, "")
     config.get_settings.cache_clear()
     from app.main import app

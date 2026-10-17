@@ -15,7 +15,9 @@ Triage of a reported email usually means 8 to 12 browser tabs: VirusTotal, urlsc
 | Links | Extracted from `href`, never from visible text; deceptive anchor text, shorteners, optional redirect resolution |
 | Attachments | SHA-256 lookups, real type vs extension, double extensions, macro documents, encrypted archives, forms hidden in HTML attachments |
 | Content | Payment-change and urgency wording typical of business email compromise |
-| Threat intel | VirusTotal, AbuseIPDB, urlscan.io (search only), URLhaus, ThreatFox, MalwareBazaar, Have I Been Pwned |
+| Sender address | Spam reports for the address (sent as a hash), role names on free-mail, machine-generated names, who hosts the mailbox, null MX, no website |
+| Infrastructure | Sending, mail-server and website IPs: network owner and country, abuse reports, Spamhaus listings, open ports and risky tags |
+| Threat intel | VirusTotal, AbuseIPDB, urlscan.io (search only), URLhaus, ThreatFox, MalwareBazaar, Google Safe Browsing, Spamhaus, AlienVault OTX, PhishStats, StopForumSpam, CIRCL hashlookup, Shodan InternetDB, IPinfo, Have I Been Pwned |
 
 Every source is optional. A missing key shows as **Not checked** in the report and lowers the confidence, never the score.
 
@@ -29,7 +31,22 @@ docker compose up -d --build
 
 Open http://localhost:8080 and try one of the fictitious emails in [`samples/`](samples/).
 
-Free keys worth getting first: [abuse.ch](https://auth.abuse.ch/) (one key covers three sources), [AbuseIPDB](https://www.abuseipdb.com/register) and [urlscan.io](https://urlscan.io/user/signup). VirusTotal's free public key is for personal and non-commercial use; at work, use your organisation's premium key.
+Five sources work with no key at all: StopForumSpam, CIRCL hashlookup, Shodan InternetDB, AlienVault OTX and PhishStats.
+
+| Source | Free key | Notes |
+| --- | --- | --- |
+| [abuse.ch](https://auth.abuse.ch/) | Yes | One key covers URLhaus, ThreatFox and MalwareBazaar |
+| [AbuseIPDB](https://www.abuseipdb.com/register) | Yes | 1,000 checks/day |
+| [urlscan.io](https://urlscan.io/user/signup) | Yes | Search only |
+| [VirusTotal](https://www.virustotal.com/) | Yes | Personal and non-commercial use; use a premium key at work |
+| [Google Safe Browsing](https://developers.google.com/safe-browsing/v4/get-started) | Yes | Non-commercial use |
+| [Spamhaus DQS](https://www.spamhaus.com/data-access/free-data-query-service/) | Yes | Non-commercial, low volume |
+| [IPinfo Lite](https://ipinfo.io/signup) | Yes | Unlimited |
+| [AlienVault OTX](https://otx.alienvault.com/) | Optional | Higher rate limit with a key |
+| [PhishStats](https://phishstats.info/) | Optional | 150/day with a key, 50 without |
+| [Have I Been Pwned](https://haveibeenpwned.com/API/Key) | Paid | Breach history of an address |
+
+Several free tiers are for non-commercial use only; the Sources page shows each source's terms. Turn any source off with `DISABLED_SOURCES`.
 
 ## How the verdict works
 
@@ -51,7 +68,8 @@ The score starts at 0, and only evidence moves it. Each triggered signal adds it
 - **Indicators are defanged** everywhere: in the UI, the case note and the IOC export.
 - **Attacker infrastructure is not contacted** by default. Short-link resolution is opt-in, uses HEAD requests only, and every hop is SSRF-checked against private address ranges.
 - **urlscan is searched, never submitted to**, because a submission publishes the URL.
-- **Privacy mode** (`PRIVACY_MODE=true`) stops full email addresses from leaving the server.
+- **Privacy mode** (`PRIVACY_MODE=true`) stops full email addresses from leaving the server. StopForumSpam only ever receives an MD5 hash of the address.
+- **Big mail providers are not looked up**: when a domain's mail is hosted by Microsoft, Google and similar, their mail-server IPs are skipped, because their reputation says nothing about the sender.
 - **Retention:** reports are purged after `RETENTION_DAYS` (default 30).
 - **Quota protection:** results are cached per indicator for 24 h, and VirusTotal lookups are capped per analysis and spent on the highest-priority indicators first.
 - API keys stay server-side and are never returned to the browser. Containers run as non-root, the API filesystem is read-only, and nginx sends a strict CSP.
@@ -68,7 +86,8 @@ nginx ──► FastAPI: parse ─► extract IOCs ─► enrich in parallel ─
                                              │                       │
                                    Redis cache (per indicator)   SQLite / Postgres
                                              │
-                    VirusTotal · AbuseIPDB · urlscan · abuse.ch · HIBP · DNS · RDAP
+        VirusTotal · AbuseIPDB · urlscan · abuse.ch · Safe Browsing · Spamhaus · OTX
+        PhishStats · StopForumSpam · CIRCL · InternetDB · IPinfo · HIBP · DNS · RDAP
 ```
 
 Each intelligence source is a plugin with one async `lookup()` method. See [docs/adding-a-source.md](docs/adding-a-source.md).
@@ -92,7 +111,7 @@ Interactive docs are served at `/docs` on the API container (port 8000). These a
 # backend
 cd backend && python -m venv .venv && . .venv/bin/activate
 pip install -r requirements-dev.txt
-pytest                 # 56 tests, no network needed
+pytest                 # 86 tests, no network needed
 uvicorn app.main:app --reload
 
 # frontend (proxies /api to localhost:8000)
@@ -101,8 +120,9 @@ cd frontend && npm install && npm run dev
 
 ## Roadmap
 
-- **v0.1 (this release):** sender and .eml analysis, five intel sources plus local checks, explainable score, case-note export, Docker.
-- **v0.2:** searchable history, OTX, Safe Browsing and Spamhaus, PDF case note, `.msg` support, login (local accounts or OIDC).
+- **v0.1:** sender and .eml analysis, explainable score, case-note export, Docker.
+- **v0.2 (this release):** 8 more sources (15 in total), deeper sender-address checks, IP and address panels.
+- **v0.3:** searchable history, PDF case note, `.msg` support, login (local accounts or OIDC).
 - **v1.0:** Sentinel, Defender and QRadar lookups for the same sender across the tenant, opt-in sandbox submission, STIX/MISP export.
 
 ## Licence

@@ -9,6 +9,7 @@ import yaml
 from app.core.lists import brands
 from app.core.util import domain_label
 from app.models.schemas import (
+    AddressProfile,
     Attachment,
     DomainProfile,
     HeaderAnalysis,
@@ -21,7 +22,7 @@ from app.models.schemas import (
 )
 
 WEIGHTS_FILE = Path(__file__).with_name("weights.yaml")
-INTEL_SOURCES = {"urlhaus", "threatfox", "malwarebazaar", "virustotal"}
+INTEL_SOURCES = {"urlhaus", "threatfox", "malwarebazaar", "virustotal", "safebrowsing", "spamhaus", "phishstats"}
 CORPORATE_WORDS = re.compile(
     r"\b(support|billing|accounts?|security|admin|administrator|team|service|services|payroll|hr|"
     r"invoices?|helpdesk|help desk|it department|finance|ceo|director|bank|delivery|customer care)\b",
@@ -62,6 +63,7 @@ def evaluate(
     domains: list[DomainProfile],
     results: list[SourceResult],
     body_text: str = "",
+    address: AddressProfile | None = None,
 ) -> tuple[list[Signal], Verdict]:
     cfg = load_weights()
     c = _Collector(cfg)
@@ -79,6 +81,19 @@ def evaluate(
             c.add("vt_suspicious", f"VirusTotal: {r.summary} ({what})", r.source)
         elif r.source == "abuseipdb" and r.severity in ("medium", "high"):
             c.add("ip_abuse", f"AbuseIPDB: {r.summary} ({r.indicator.value})", r.source)
+        elif r.source == "spamhaus":
+            if r.details.get("zrd_hours"):
+                c.add("zero_reputation", f"Spamhaus: {r.indicator.value} {r.summary}", r.source)
+            if r.details.get("block_severity") == "medium":
+                c.add("spamhaus_listed", f"Spamhaus: {r.summary} ({what})", r.source)
+        elif r.source == "phishstats":
+            c.add("phishing_db", f"PhishStats: {r.summary} ({what})", r.source)
+        elif r.source == "otx":
+            c.add("otx_pulses", f"OTX: {r.summary} ({what})", r.source)
+        elif r.source == "stopforumspam" and r.severity in ("medium", "high"):
+            c.add("spam_reports", f"StopForumSpam: {r.summary} ({what})", r.source)
+        elif r.source == "internetdb" and r.severity in ("medium", "high"):
+            c.add("risky_host", f"Shodan InternetDB: {r.summary} ({r.indicator.value})", r.source)
 
     # --- header and authentication checks -----------------------------------------
     if headers:
@@ -112,6 +127,16 @@ def evaluate(
         if d.role in sender_roles and "dns" in d.checks_run and not d.spf and not d.dmarc and not d.is_freemail:
             c.add("no_mail_auth", f"{d.registrable} has no SPF and no DMARC record", "dns")
 
+        if d.role in sender_roles | {"reply_to"} and not d.is_freemail:
+            if d.exists is False:
+                c.add("sender_domain_missing", f"{d.registrable} does not exist in DNS", "dns")
+            elif d.null_mx:
+                c.add("null_mx", f"{d.registrable} publishes a null MX, so replies cannot be delivered", "dns")
+            elif "dns" in d.checks_run and not d.mx:
+                c.add("no_mx", f"{d.registrable} has no MX record, so it cannot receive replies", "dns")
+            if "dns" in d.checks_run and d.exists is not False and d.has_website is False:
+                c.add("no_website", f"{d.registrable} has no website (no A/AAAA record)", "dns")
+
         tld = d.registrable.rsplit(".", 1)[-1]
         if tld in RISKY_TLDS and not d.is_freemail:
             c.add("risky_tld", f"{d.registrable} uses .{tld}", "lists")
@@ -126,6 +151,12 @@ def evaluate(
             c.add("freemail_impersonation", f"'{headers.from_display}' sent from free-mail domain {sender.registrable}", "headers")
         elif used and not sender.is_freemail:
             c.add("brand_display_name", f"display name '{headers.from_display}' but sender domain is {sender.registrable}", "headers")
+
+    if address and sender:
+        if address.role_word and sender.is_freemail:
+            c.add("role_on_freemail", f"'{address.local_part}' is a role or company-style name on free-mail ({sender.registrable})", "address")
+        if address.looks_random:
+            c.add("random_local_part", f"'{address.local_part}': {address.random_reasons[0]}", "address")
 
     if body_text or headers:
         text = " ".join(filter(None, [headers.subject if headers else "", body_text[:5000]]))
@@ -142,7 +173,8 @@ def evaluate(
     short = [l for l in links if l.is_shortener]
     if short:
         c.add("shortener", f"{len(short)} shortened link(s), e.g. {short[0].defanged}", "body")
-    risky = [a for a in attachments if a.risky]
+    known_good = {r.indicator.value for r in results if r.source == "circl" and r.details.get("known_good")}
+    risky = [a for a in attachments if a.risky and a.sha256 not in known_good]
     if risky:
         a = risky[0]
         c.add("risky_attachment", f"{a.filename}: {a.reasons[0]}", "attachments")

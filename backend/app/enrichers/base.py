@@ -34,6 +34,14 @@ class Enricher(ABC):
     def configured(self) -> bool:
         return bool(self.api_key()) if self.needs_key else True
 
+    def disabled(self) -> bool:
+        return self.name in self.settings.disabled_source_set
+
+    @property
+    def budget(self) -> int | None:
+        """Max lookups per analysis (None = unlimited). Protects small free quotas."""
+        return None
+
     def supports(self, indicator: Indicator) -> bool:
         return indicator.type in self.indicator_types
 

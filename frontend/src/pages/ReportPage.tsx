@@ -121,6 +121,7 @@ function Overview({ r }: { r: Report }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
       <div className="space-y-6 min-w-0">
+        {r.address && <AddressPanel r={r} />}
         <Panel title="Domains">
           {r.domains.length === 0 ? <Empty>No domains in this check.</Empty> : (
             <div className="overflow-x-auto -mx-1">
@@ -147,6 +148,10 @@ function Overview({ r }: { r: Report }) {
                         ) : <span className="text-muted whitespace-nowrap">{d.role === "link" ? "not needed" : "not checked"}</span>}
                       </td>
                       <td className="py-2 px-1 space-y-1">
+                        {d.exists === false && <p className="text-bad">Domain does not exist</p>}
+                        {d.null_mx && <p className="text-bad">Accepts no mail (null MX)</p>}
+                        {d.mail_provider && <p>Mail: {d.mail_provider}</p>}
+                        {d.checks_run.includes("dns") && d.exists !== false && d.has_website === false && <p className="text-warn">No website</p>}
                         {d.lookalike_reason && <p className={d.lookalike_strong ? "text-bad" : "text-warn"}>{d.lookalike_reason}</p>}
                         {d.is_freemail && <p className="text-muted">Free-mail provider</p>}
                         {d.is_disposable && <p className="text-bad">Disposable mailbox</p>}
@@ -159,6 +164,7 @@ function Overview({ r }: { r: Report }) {
             </div>
           )}
         </Panel>
+        <IpPanel r={r} />
         {r.body_preview && (
           <Panel title="Message text" aside={<span className="text-xs text-muted">Plain text only, links are not clickable</span>}>
             <pre className="data whitespace-pre-wrap max-h-80 overflow-auto rounded bg-sunk p-3 text-ink/90">{r.body_preview}</pre>
@@ -191,6 +197,73 @@ function Overview({ r }: { r: Report }) {
         )}
       </div>
     </div>
+  );
+}
+
+function AddressPanel({ r }: { r: Report }) {
+  const a = r.address!;
+  const d = r.domains.find((x) => x.role === "sender" || x.role === "input");
+  const own = r.results.filter((x) => x.indicator.type === "email");
+  const rows: [string, React.ReactNode][] = [
+    ["Mailbox name", <span className="data">{a.local_part}</span>],
+    ["Pattern", a.looks_random ? <span className="text-warn">{a.random_reasons.join("; ")}</span> : "Looks like a normal name or word"],
+    ["Role word", a.role_word ? <span className={d?.is_freemail ? "text-warn" : ""}>{a.role_word}{d?.is_freemail ? " (on free-mail)" : ""}</span> : "None"],
+    ["Mail hosted by", d?.mail_provider ?? (d?.is_freemail ? "Free-mail provider" : <span className="text-muted">unknown</span>)],
+  ];
+  if (a.plus_tag) rows.push(["Plus tag", <span className="data">+{a.plus_tag}</span>]);
+  return (
+    <Panel title="Sender address">
+      <dl className="grid grid-cols-[130px_1fr] gap-x-3 gap-y-2 text-sm">
+        {rows.map(([k, v]) => (
+          <div key={k} className="contents"><dt className="text-muted">{k}</dt><dd>{v}</dd></div>
+        ))}
+        {own.map((x) => (
+          <div key={x.source} className="contents">
+            <dt className="text-muted">{sourceTitle[x.source] ?? x.source}</dt>
+            <dd className="flex flex-wrap items-center gap-2"><StatusChip status={x.status} /> <span>{x.summary}</span></dd>
+          </div>
+        ))}
+      </dl>
+    </Panel>
+  );
+}
+
+const ipRole: Record<string, string> = { header: "Sending server", mx: "Mail server", web: "Website", input: "Checked" };
+const ipCols = ["ipinfo", "abuseipdb", "spamhaus", "internetdb", "stopforumspam", "otx", "virustotal"] as const;
+
+function IpPanel({ r }: { r: Report }) {
+  const ips = r.indicators.filter((i) => i.type === "ip");
+  if (!ips.length) return null;
+  return (
+    <Panel title="IP addresses">
+      <ul className="divide-y divide-line -my-2">
+        {ips.map((ip) => {
+          const res = r.results.filter((x) => x.indicator.value === ip.value && x.status !== "skipped");
+          const info = res.find((x) => x.source === "ipinfo");
+          const rest = ipCols.filter((c) => c !== "ipinfo").map((c) => res.find((x) => x.source === c)).filter(Boolean) as SourceResult[];
+          return (
+            <li key={ip.value} className="py-3">
+              <div className="flex flex-wrap items-baseline gap-x-3">
+                <span className="data">{ip.value}</span>
+                <span className="text-sm text-muted">{ipRole[ip.origin] ?? ip.origin}</span>
+                {info && <span className="text-sm">{info.summary}</span>}
+              </div>
+              {rest.length === 0 ? <p className="text-sm text-muted mt-1">No IP source checked this address.</p> : (
+                <ul className="mt-1.5 space-y-1 text-sm">
+                  {rest.map((x) => (
+                    <li key={x.source} className="flex flex-wrap items-center gap-2">
+                      <span className="w-32 text-muted">{sourceTitle[x.source]}</span>
+                      <StatusChip status={x.status} />
+                      <span className="min-w-0">{x.summary}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </Panel>
   );
 }
 

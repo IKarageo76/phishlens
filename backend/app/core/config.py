@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     urlscan_api_key: str = Field(default="", alias="URLSCAN_API_KEY")
     abusech_auth_key: str = Field(default="", alias="ABUSECH_AUTH_KEY")
     hibp_api_key: str = Field(default="", alias="HIBP_API_KEY")
+    otx_api_key: str = Field(default="", alias="OTX_API_KEY")
+    gsb_api_key: str = Field(default="", alias="GSB_API_KEY")
+    spamhaus_dqs_key: str = Field(default="", alias="SPAMHAUS_DQS_KEY")
+    phishstats_api_key: str = Field(default="", alias="PHISHSTATS_API_KEY")
+    ipinfo_token: str = Field(default="", alias="IPINFO_TOKEN")
+    disabled_sources: str = Field(default="", alias="DISABLED_SOURCES")
 
     # --- Behaviour ---
     protected_domains: str = Field(default="", alias="PROTECTED_DOMAINS")
@@ -37,6 +43,10 @@ class Settings(BaseSettings):
     @property
     def protected_domain_list(self) -> list[str]:
         return [d.strip().lower() for d in self.protected_domains.split(",") if d.strip()]
+
+    @property
+    def disabled_source_set(self) -> set[str]:
+        return {s.strip().lower() for s in self.disabled_sources.split(",") if s.strip()}
 
     @property
     def cors_origin_list(self) -> list[str]:
