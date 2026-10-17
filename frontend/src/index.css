@@ -46,3 +46,19 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+@media print {
+  :root, .dark {
+    --base: 255 255 255; --panel: 255 255 255; --sunk: 244 246 249; --line: 210 216 225;
+    --ink: 20 24 31; --muted: 80 90 104; --lens: 40 60 180;
+    --bad: 190 30 36; --warn: 150 90 0; --good: 20 120 70;
+    color-scheme: light;
+  }
+  .no-print { display: none !important; }
+  body { font-size: 11pt; }
+  main { padding: 0 !important; max-width: none !important; }
+  section { border-color: rgb(var(--line)) !important; }
+  .evidence-raw { max-height: none !important; overflow: visible !important; }
+  .break-inside-avoid { break-inside: avoid; }
+  a { color: rgb(var(--lens)); text-decoration: underline; }
+}

@@ -7,6 +7,7 @@ import httpx
 
 from app.core.cache import Cache
 from app.core.config import Settings
+from app.core.evidence import last_response
 from app.core.http import rate_limiter
 from app.enrichers.abusech import MalwareBazaar, ThreatFox, URLhaus
 from app.enrichers.abuseipdb import AbuseIPDB
@@ -58,12 +59,11 @@ async def run_enrichers(
         if not applicable:
             continue
         if not enricher.configured():
-            results.append(SourceResult(source=enricher.name, indicator=applicable[0], status=SourceStatus.skipped,
-                                        summary="no API key configured"))
+            results.append(enricher.result(applicable[0], SourceStatus.skipped, "no API key configured", query=None, raw=None))
             continue
         if enricher.sends_email_address and settings.privacy_mode:
-            results.append(SourceResult(source=enricher.name, indicator=applicable[0], status=SourceStatus.skipped,
-                                        summary="privacy mode: full email addresses are not sent to third parties"))
+            results.append(enricher.result(applicable[0], SourceStatus.skipped,
+                                           "privacy mode: full email addresses are not sent to third parties", query=None, raw=None))
             continue
         for ind in applicable:
             limit = enricher.budget
@@ -80,6 +80,7 @@ async def run_enrichers(
             jobs.append((enricher, ind))
 
     async def _run(enricher: Enricher, ind: Indicator) -> SourceResult:
+        last_response.set(None)  # each lookup records only its own HTTP evidence
         if not rate_limiter.try_acquire(enricher.name, enricher.per_minute):
             return enricher.result(ind, SourceStatus.skipped, f"rate limit ({enricher.per_minute}/min) reached; retry shortly")
         try:

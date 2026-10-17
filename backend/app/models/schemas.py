@@ -42,6 +42,10 @@ class SourceResult(BaseModel):
     details: dict[str, Any] = Field(default_factory=dict)
     link: str | None = None
     cached: bool = False
+    checked_at: datetime | None = None
+    query: str | None = None
+    raw: Any | None = None
+    extra_links: list[dict[str, str]] = Field(default_factory=list)
 
 
 class AuthResults(BaseModel):

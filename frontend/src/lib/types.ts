@@ -7,6 +7,7 @@ export interface SourceResult {
   source: string; indicator: Indicator; status: SourceStatus; summary: string;
   severity: "none" | "low" | "medium" | "high"; details: Record<string, unknown>;
   link: string | null; cached: boolean;
+  checked_at: string | null; query: string | null; raw: unknown; extra_links: { label: string; url: string }[];
 }
 export interface Hop { index: number; from_host: string | null; by_host: string | null; ip: string | null; timestamp: string | null; delay_seconds: number | null }
 export interface Headers {

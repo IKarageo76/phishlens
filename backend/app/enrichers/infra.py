@@ -23,6 +23,10 @@ class CIRCLHashlookup(Enricher):
     def api_key(self) -> str:
         return ""
 
+    def page_url(self, indicator: Indicator) -> str | None:
+        algo = {32: "md5", 40: "sha1"}.get(len(indicator.value), "sha256")
+        return f"https://hashlookup.circl.lu/lookup/{algo}/{indicator.value}"
+
     async def lookup(self, indicator: Indicator, client: httpx.AsyncClient) -> SourceResult:
         algo = {32: "md5", 40: "sha1", 64: "sha256"}.get(len(indicator.value), "sha256")
         resp = await client.get(f"https://hashlookup.circl.lu/lookup/{algo}/{indicator.value}")
@@ -33,8 +37,7 @@ class CIRCLHashlookup(Enricher):
         trust = int(data.get("hashlookup:trust") or 50)
         name = data.get("FileName") or data.get("filename") or "known file"
         details = {"trust": trust, "file_name": name, "product": data.get("ProductName"), "known_good": trust >= 50}
-        return self.result(indicator, SourceStatus.info, f"known file: {name} (trust {trust}/100)", details=details,
-                           link=f"https://hashlookup.circl.lu/lookup/{algo}/{indicator.value}")
+        return self.result(indicator, SourceStatus.info, f"known file: {name} (trust {trust}/100)", details=details)
 
 
 class InternetDB(Enricher):
@@ -50,6 +53,9 @@ class InternetDB(Enricher):
     def api_key(self) -> str:
         return ""
 
+    def page_url(self, indicator: Indicator) -> str | None:
+        return f"https://internetdb.shodan.io/{indicator.value}"
+
     async def lookup(self, indicator: Indicator, client: httpx.AsyncClient) -> SourceResult:
         resp = await client.get(f"https://internetdb.shodan.io/{indicator.value}")
         if resp.status_code == 404:
@@ -64,12 +70,13 @@ class InternetDB(Enricher):
         if tags:
             parts.append(f"tags: {', '.join(tags)}")
         summary = "; ".join(parts)
-        link = f"https://www.shodan.io/host/{indicator.value}"
+        link = None
+        extra = [{"label": "Shodan host page (login needed)", "url": f"https://www.shodan.io/host/{indicator.value}"}]
         if set(tags) & BAD_TAGS:
-            return self.result(indicator, SourceStatus.hit, summary, severity="medium", details=details, link=link)
+            return self.result(indicator, SourceStatus.hit, summary, severity="medium", details=details, link=link, extra_links=extra)
         if set(tags) & ANON_TAGS:
-            return self.result(indicator, SourceStatus.hit, summary, severity="low", details=details, link=link)
-        return self.result(indicator, SourceStatus.info, summary, details=details, link=link)
+            return self.result(indicator, SourceStatus.hit, summary, severity="low", details=details, link=link, extra_links=extra)
+        return self.result(indicator, SourceStatus.info, summary, details=details, link=link, extra_links=extra)
 
 
 class IPinfo(Enricher):
@@ -84,6 +91,9 @@ class IPinfo(Enricher):
     def api_key(self) -> str:
         return self.settings.ipinfo_token
 
+    def page_url(self, indicator: Indicator) -> str | None:
+        return f"https://ipinfo.io/{indicator.value}"
+
     async def lookup(self, indicator: Indicator, client: httpx.AsyncClient) -> SourceResult:
         resp = await client.get(f"https://api.ipinfo.io/lite/{indicator.value}", params={"token": self.api_key()})
         resp.raise_for_status()
@@ -91,5 +101,4 @@ class IPinfo(Enricher):
         details = {k: d.get(k) for k in ("asn", "as_name", "as_domain", "country", "country_code", "continent")}
         owner = " ".join(filter(None, [d.get("asn"), d.get("as_name")])) or "unknown network"
         where = d.get("country") or d.get("country_code") or "unknown country"
-        return self.result(indicator, SourceStatus.info, f"{owner}, {where}", details=details,
-                           link=f"https://ipinfo.io/{indicator.value}")
+        return self.result(indicator, SourceStatus.info, f"{owner}, {where}", details=details)

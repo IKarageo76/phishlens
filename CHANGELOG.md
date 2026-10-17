@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.3.0 (2026-10-17)
+
+- Evidence section on every report: per source and indicator, the result as returned, key fields,
+  raw response (trimmed), check time in local time and UTC, and the request sent with keys removed
+- Verification link for every source, including skipped ones, plus extra links (MXToolbox SPF/DMARC,
+  raw RDAP record, urlscan screenshot, Shodan host page)
+- VirusTotal evidence lists the engines that flagged the indicator
+- Spamhaus evidence shows the DNS queries (key redacted) and return codes
+- Print or save as PDF: expands all evidence, light print layout
+- Case note: evidence table with result, check time and verification link per source
+
 ## v0.2.0 (2026-10-17)
 
 - 8 new sources: Google Safe Browsing, Spamhaus DQS (ZEN, DBL, ZRD), AlienVault OTX, PhishStats,

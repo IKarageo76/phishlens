@@ -28,6 +28,9 @@ class VirusTotal(Enricher):
     def budget(self) -> int | None:
         return self.settings.vt_max_lookups
 
+    def page_url(self, indicator: Indicator) -> str | None:
+        return self._paths(indicator)[1]
+
     def _paths(self, ind: Indicator) -> tuple[str, str]:
         if ind.type == IndicatorType.url:
             vid = base64.urlsafe_b64encode(ind.value.encode()).decode().strip("=")
@@ -57,6 +60,12 @@ class VirusTotal(Enricher):
             "reputation": attrs.get("reputation"),
             "categories": attrs.get("categories"),
             "meaningful_name": attrs.get("meaningful_name"),
+            "flagged_by": sorted(
+                f"{engine}: {r.get('result') or r.get('category')}"
+                for engine, r in (attrs.get("last_analysis_results") or {}).items()
+                if r.get("category") in ("malicious", "suspicious")
+            )[:30],
+            "last_analysis": attrs.get("last_analysis_date"),
         }
         if malicious >= 3:
             return self.result(indicator, SourceStatus.hit, f"{malicious}/{total} engines flag it malicious",

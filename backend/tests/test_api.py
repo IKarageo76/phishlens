@@ -49,7 +49,10 @@ def test_upload_eml_and_exports(client):
     assert r.json()["verdict"]["label"] == "malicious"
     note = client.get(f"/api/reports/{rid}/case-note.md")
     assert note.status_code == 200 and "Malicious" in note.text
-    assert "micros0ft-login[.]com" in note.text and "micros0ft-login.com" not in note.text  # defanged
+    assert "## Evidence" in note.text and "| VirusTotal |" in note.text and "Not checked" in note.text
+    assert "https://www.virustotal.com/gui/" in note.text
+    assert "micros0ft-login[.]com" in note.text  # indicators are defanged
+    assert "](https://micros0ft-login" not in note.text and "](http://micros0ft" not in note.text  # never a live link to the threat
     csv = client.get(f"/api/reports/{rid}/iocs.csv")
     assert csv.status_code == 200 and csv.text.startswith("type,value_defanged")
 

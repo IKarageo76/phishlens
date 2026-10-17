@@ -23,6 +23,10 @@ class OTX(Enricher):
     def api_key(self) -> str:
         return self.settings.otx_api_key
 
+    def page_url(self, indicator: Indicator) -> str | None:
+        kind = {"IPv4": "ip", "IPv6": "ip", "domain": "domain", "url": "url", "file": "file"}[self._section(indicator)]
+        return f"https://otx.alienvault.com/indicator/{kind}/{quote(indicator.value, safe=':/')}"
+
     def _section(self, ind: Indicator) -> str:
         if ind.type == IndicatorType.ip:
             return "IPv6" if ":" in ind.value else "IPv4"
@@ -33,7 +37,6 @@ class OTX(Enricher):
         headers = {"X-OTX-API-KEY": self.api_key()} if self.api_key() else {}
         value = quote(indicator.value, safe=":/") if indicator.type == IndicatorType.url else indicator.value
         resp = await client.get(f"{API}/{section}/{value}/general", headers=headers)
-        page = f"https://otx.alienvault.com/indicator/{section.lower() if section != 'IPv4' else 'ip'}/{indicator.value}"
         if resp.status_code == 404:
             return self.result(indicator, SourceStatus.clean, "not in OTX")
         if resp.status_code == 429:
@@ -53,11 +56,11 @@ class OTX(Enricher):
         if validation:
             return self.result(indicator, SourceStatus.clean,
                                f"allowlisted by OTX ({details['allowlisted'][0]})" + (f"; in {count} pulse(s)" if count else ""),
-                               details=details, link=page)
+                               details=details)
         if count == 0:
-            return self.result(indicator, SourceStatus.clean, "in no OTX pulses", details=details, link=page)
+            return self.result(indicator, SourceStatus.clean, "in no OTX pulses", details=details)
         first = details["pulse_names"][0] if details["pulse_names"] else "a pulse"
         severity = "medium" if count >= 3 or details["malware_families"] else "low"
         return self.result(indicator, SourceStatus.hit, f"in {count} OTX pulse(s), e.g. '{first}'",
-                           severity=severity, details=details, link=page)
+                           severity=severity, details=details)
 

@@ -62,6 +62,17 @@ The score starts at 0, and only evidence moves it. Each triggered signal adds it
 - Weights live in [`backend/app/scoring/weights.yaml`](backend/app/scoring/weights.yaml). Tune them against your own labelled cases.
 - Confidence reflects how many sources actually ran.
 
+## Evidence for every verdict
+
+Investigations need proof, so every report ends with an **Evidence** section, grouped by indicator. For each source it shows:
+
+- the result exactly as the source returned it (key fields plus the raw response);
+- when it was checked, in local time and UTC (cached results keep their original check time);
+- the request that was sent, with API keys removed;
+- a link to the same result on the source's own site, so the analyst can verify it and take the screenshot there. Sources that were not checked still get a link for a manual check.
+
+**Print or save as PDF** expands every entry and prints a clean, light page for the case file. The Markdown case note includes the same evidence table with links.
+
 ## Safe by design
 
 - **Nothing in the email runs.** HTML is tokenised for links, never rendered. Attachments are hashed in memory and discarded.
@@ -111,7 +122,7 @@ Interactive docs are served at `/docs` on the API container (port 8000). These a
 # backend
 cd backend && python -m venv .venv && . .venv/bin/activate
 pip install -r requirements-dev.txt
-pytest                 # 86 tests, no network needed
+pytest                 # 92 tests, no network needed
 uvicorn app.main:app --reload
 
 # frontend (proxies /api to localhost:8000)
@@ -121,8 +132,9 @@ cd frontend && npm install && npm run dev
 ## Roadmap
 
 - **v0.1:** sender and .eml analysis, explainable score, case-note export, Docker.
-- **v0.2 (this release):** 8 more sources (15 in total), deeper sender-address checks, IP and address panels.
-- **v0.3:** searchable history, PDF case note, `.msg` support, login (local accounts or OIDC).
+- **v0.2:** 8 more sources (15 in total), deeper sender-address checks, IP and address panels.
+- **v0.3 (this release):** evidence section with raw results, check times and verification links; print/PDF view; evidence in the case note.
+- **v0.4:** searchable history, `.msg` support, login (local accounts or OIDC).
 - **v1.0:** Sentinel, Defender and QRadar lookups for the same sender across the tenant, opt-in sandbox submission, STIX/MISP export.
 
 ## Licence

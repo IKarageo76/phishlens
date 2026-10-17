@@ -18,6 +18,9 @@ class AbuseIPDB(Enricher):
     def api_key(self) -> str:
         return self.settings.abuseipdb_api_key
 
+    def page_url(self, indicator: Indicator) -> str | None:
+        return f"https://www.abuseipdb.com/check/{indicator.value}"
+
     async def lookup(self, indicator: Indicator, client: httpx.AsyncClient) -> SourceResult:
         resp = await client.get(
             API,

@@ -38,7 +38,7 @@ export function Layout() {
     cx("px-3 h-9 inline-flex items-center rounded text-sm", isActive ? "text-ink bg-panel" : "text-muted hover:text-ink");
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b border-line">
+      <header className="no-print border-b border-line">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 h-14 flex items-center gap-6">
           <NavLink to="/" className="flex items-center gap-2 font-semibold tracking-tight text-[17px]">
             <Logo /> PhishLens
@@ -53,7 +53,7 @@ export function Layout() {
       <main className="flex-1 mx-auto w-full max-w-6xl px-4 sm:px-6 py-8">
         <Outlet />
       </main>
-      <footer className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-6 text-xs text-muted">
+      <footer className="no-print mx-auto w-full max-w-6xl px-4 sm:px-6 py-6 text-xs text-muted">
         Self-hosted. Email files are analysed in memory; attachments are hashed and never opened.
       </footer>
     </div>

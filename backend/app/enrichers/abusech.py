@@ -1,6 +1,8 @@
 """abuse.ch sources: URLhaus (malware URLs), ThreatFox (IOCs), MalwareBazaar (samples).
 One free Auth-Key covers all three."""
 
+from urllib.parse import quote
+
 import httpx
 
 from app.enrichers.base import Enricher
@@ -25,6 +27,9 @@ class URLhaus(_AbuseCH):
     name = "urlhaus"
     title = "URLhaus"
     indicator_types = {IndicatorType.url, IndicatorType.domain}
+
+    def page_url(self, indicator: Indicator) -> str | None:
+        return f"https://urlhaus.abuse.ch/browse.php?search={quote(indicator.value, safe='')}"
 
     async def lookup(self, indicator: Indicator, client: httpx.AsyncClient) -> SourceResult:
         if indicator.type == IndicatorType.url:
@@ -52,6 +57,9 @@ class ThreatFox(_AbuseCH):
     name = "threatfox"
     title = "ThreatFox"
     indicator_types = {IndicatorType.domain, IndicatorType.ip, IndicatorType.url, IndicatorType.hash}
+
+    def page_url(self, indicator: Indicator) -> str | None:
+        return f"https://threatfox.abuse.ch/browse.php?search=ioc%3A{quote(indicator.value, safe='')}"
 
     async def lookup(self, indicator: Indicator, client: httpx.AsyncClient) -> SourceResult:
         resp = await client.post(
@@ -81,6 +89,10 @@ class MalwareBazaar(_AbuseCH):
     name = "malwarebazaar"
     title = "MalwareBazaar"
     indicator_types = {IndicatorType.hash}
+
+    def page_url(self, indicator: Indicator) -> str | None:
+        algo = {32: "md5", 40: "sha1"}.get(len(indicator.value), "sha256")
+        return f"https://bazaar.abuse.ch/browse.php?search={algo}%3A{indicator.value}"
 
     async def lookup(self, indicator: Indicator, client: httpx.AsyncClient) -> SourceResult:
         resp = await client.post("https://mb-api.abuse.ch/api/v1/", data={"query": "get_info", "hash": indicator.value},

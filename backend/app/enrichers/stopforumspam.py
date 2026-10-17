@@ -1,4 +1,5 @@
 import hashlib
+from urllib.parse import quote
 
 import httpx
 
@@ -24,6 +25,10 @@ class StopForumSpam(Enricher):
     def api_key(self) -> str:
         return ""
 
+    def page_url(self, indicator: Indicator) -> str | None:
+        # Opening this sends the value to StopForumSpam from the analyst's browser.
+        return f"https://www.stopforumspam.com/search?q={quote(indicator.value, safe='@')}"
+
     async def lookup(self, indicator: Indicator, client: httpx.AsyncClient) -> SourceResult:
         if indicator.type == IndicatorType.email:
             params = {"emailhash": hashlib.md5(indicator.value.strip().lower().encode()).hexdigest()}  # noqa: S324
@@ -48,5 +53,4 @@ class StopForumSpam(Enricher):
         seen = f", last {str(entry.get('lastseen'))[:10]}" if entry.get("lastseen") else ""
         return self.result(indicator, SourceStatus.hit,
                            f"{what} reported for spam {freq} time(s) (confidence {conf:.0f}%{seen})",
-                           severity=severity, details=details,
-                           link="https://www.stopforumspam.com/search?q=" + (indicator.value if what == "IP" else ""))
+                           severity=severity, details=details)

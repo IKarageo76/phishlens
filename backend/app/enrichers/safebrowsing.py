@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 import httpx
 
 from app.enrichers.base import Enricher
@@ -24,9 +26,12 @@ class SafeBrowsing(Enricher):
     def api_key(self) -> str:
         return self.settings.gsb_api_key
 
+    def page_url(self, indicator: Indicator) -> str | None:
+        return f"https://transparencyreport.google.com/safe-browsing/search?url={quote(indicator.value, safe='')}"
+
     async def lookup(self, indicator: Indicator, client: httpx.AsyncClient) -> SourceResult:
         body = {
-            "client": {"clientId": "phishlens", "clientVersion": "0.2.0"},
+            "client": {"clientId": "phishlens", "clientVersion": "0.3.0"},
             "threatInfo": {
                 "threatTypes": list(THREATS),
                 "platformTypes": ["ANY_PLATFORM"],
@@ -43,5 +48,4 @@ class SafeBrowsing(Enricher):
             return self.result(indicator, SourceStatus.clean, "not on Google's unsafe lists")
         kinds = sorted({THREATS.get(m.get("threatType"), m.get("threatType", "unsafe")) for m in matches})
         return self.result(indicator, SourceStatus.hit, f"listed by Google as {', '.join(kinds)}",
-                           severity="high", details={"threats": kinds},
-                           link=f"https://transparencyreport.google.com/safe-browsing/search?url={indicator.value}")
+                           severity="high", details={"threats": kinds})

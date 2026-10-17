@@ -34,6 +34,11 @@ class PhishStats(Enricher):
     def budget(self) -> int | None:
         return 3
 
+    def page_url(self, indicator: Indicator) -> str | None:
+        host = _host(indicator.value) if indicator.type == IndicatorType.url else indicator.value.lower()
+        # The public API answers anonymously in a browser: the result itself is the proof.
+        return f"{API}?_where=(url,like,{host})&_sort=-id&_size=50" if host else None
+
     async def lookup(self, indicator: Indicator, client: httpx.AsyncClient) -> SourceResult:
         host = _host(indicator.value) if indicator.type == IndicatorType.url else indicator.value.lower()
         if not host or not all(c.isalnum() or c in ".-" for c in host):

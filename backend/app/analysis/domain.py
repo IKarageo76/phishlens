@@ -13,6 +13,7 @@ from app.analysis.lookalike import find_lookalike
 from app.analysis.mailprovider import identify
 from app.core.cache import Cache
 from app.core.config import Settings
+from app.core.evidence import trim
 from app.core.http import UnsafeURLError, assert_public_url
 from app.core.lists import disposable, freemail
 from app.core.util import registrable_domain
@@ -92,7 +93,7 @@ async def rdap_lookup(domain: str, client: httpx.AsyncClient) -> dict | None:
             url = str(httpx.URL(url).join(resp.headers["location"]))
             continue
         if resp.status_code == 404:
-            return {"not_found": True}
+            return {"not_found": True, "url": url}
         resp.raise_for_status()
         data = resp.json()
         created = next(
@@ -105,7 +106,7 @@ async def rdap_lookup(domain: str, client: httpx.AsyncClient) -> dict | None:
                 for item in (entity.get("vcardArray") or [None, []])[1]:
                     if item and item[0] == "fn":
                         registrar = item[3]
-        return {"created": created, "registrar": registrar}
+        return {"created": created, "registrar": registrar, "url": url, "raw": trim(data)}
     return None
 
 
@@ -139,6 +140,7 @@ async def build_profile(
         cached = data is not None
         if data is None:
             data = await mail_dns(reg)
+            data["checked_at"] = datetime.now(UTC).isoformat()
             if data["ok"]:
                 await cache.set(key, data, 3600)
     if with_mail_dns and settings.dns_enabled and not data["ok"]:
@@ -169,7 +171,16 @@ async def build_profile(
         results.append(
             SourceResult(
                 source="dns", indicator=indicator, status=SourceStatus.info, summary=", ".join(parts),
-                details={"mx": profile.mx, "spf": profile.spf, "dmarc": profile.dmarc, "provider": profile.mail_provider}, cached=cached,
+                details={"mx": profile.mx, "spf": profile.spf, "dmarc": profile.dmarc, "provider": profile.mail_provider,
+                         "website_ips": profile.web_ips, "mail_server_ips": profile.mx_ips}, cached=cached,
+                checked_at=data.get("checked_at"),
+                query=f"DNS MX, TXT and A/AAAA for {reg}; TXT for _dmarc.{reg}",
+                raw={k: data.get(k) for k in ("mx", "spf", "dmarc", "null_mx", "nxdomain", "web_ips", "mx_ips")},
+                link=f"https://mxtoolbox.com/SuperTool.aspx?action=mx%3a{reg}&run=toolpage",
+                extra_links=[
+                    {"label": "SPF on MXToolbox", "url": f"https://mxtoolbox.com/SuperTool.aspx?action=spf%3a{reg}&run=toolpage"},
+                    {"label": "DMARC on MXToolbox", "url": f"https://mxtoolbox.com/SuperTool.aspx?action=dmarc%3a{reg}&run=toolpage"},
+                ],
             )
         )
 
@@ -180,6 +191,8 @@ async def build_profile(
         if data is None:
             try:
                 data = await rdap_lookup(reg, client)
+                if data is not None:
+                    data["checked_at"] = datetime.now(UTC).isoformat()
             except (httpx.HTTPError, UnsafeURLError, ValueError) as exc:
                 results.append(
                     SourceResult(source="rdap", indicator=indicator, status=SourceStatus.error,
@@ -205,6 +218,11 @@ async def build_profile(
                 summary = "not found in RDAP (unregistered or unsupported TLD)"
             results.append(
                 SourceResult(source="rdap", indicator=indicator, status=SourceStatus.info, summary=summary,
-                             details={"registrar": profile.registrar}, cached=cached)
+                             details={"registered": data.get("created"), "registrar": profile.registrar}, cached=cached,
+                             checked_at=data.get("checked_at"),
+                             query=f"GET {data['url']}" if data.get("url") else None,
+                             raw=data.get("raw"),
+                             link=f"https://lookup.icann.org/en/lookup?name={reg}",
+                             extra_links=[{"label": "Raw RDAP record", "url": data["url"]}] if data.get("url") else [])
             )
     return profile, results

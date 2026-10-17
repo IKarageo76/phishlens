@@ -6,11 +6,13 @@ for ordinary failures (the runner converts exceptions into `error` results).
 """
 
 from abc import ABC, abstractmethod
+from datetime import UTC, datetime
 from typing import ClassVar
 
 import httpx
 
 from app.core.config import Settings
+from app.core.evidence import from_last_response
 from app.models.schemas import Indicator, IndicatorType, SourceResult, SourceStatus
 
 
@@ -48,6 +50,17 @@ class Enricher(ABC):
     @abstractmethod
     async def lookup(self, indicator: Indicator, client: httpx.AsyncClient) -> SourceResult: ...
 
+    def page_url(self, indicator: Indicator) -> str | None:
+        """Public page where an analyst can verify (and screenshot) this result."""
+        return None
+
     # helpers -------------------------------------------------------------
     def result(self, indicator: Indicator, status: SourceStatus, summary: str, **kw) -> SourceResult:
+        """Build a result with its evidence: time, redacted request, raw response, link."""
+        if not kw.get("link"):
+            kw["link"] = self.page_url(indicator)
+        evidence = from_last_response()
+        kw.setdefault("query", evidence.get("query"))
+        kw.setdefault("raw", evidence.get("raw"))
+        kw.setdefault("checked_at", datetime.now(UTC))
         return SourceResult(source=self.name, indicator=indicator, status=status, summary=summary, **kw)

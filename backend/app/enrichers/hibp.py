@@ -22,19 +22,21 @@ class HaveIBeenPwned(Enricher):
     def api_key(self) -> str:
         return self.settings.hibp_api_key
 
+    def page_url(self, indicator: Indicator) -> str | None:
+        return "https://haveibeenpwned.com/"
+
     async def lookup(self, indicator: Indicator, client: httpx.AsyncClient) -> SourceResult:
         resp = await client.get(
             f"https://haveibeenpwned.com/api/v3/breachedaccount/{quote(indicator.value)}",
             params={"truncateResponse": "true"},
             headers={"hibp-api-key": self.api_key()},
         )
-        link = "https://haveibeenpwned.com/"
         if resp.status_code == 404:
-            return self.result(indicator, SourceStatus.clean, "not found in any known breach", link=link)
+            return self.result(indicator, SourceStatus.clean, "not found in any known breach")
         if resp.status_code == 429:
             return self.result(indicator, SourceStatus.skipped, "HIBP rate limit reached")
         resp.raise_for_status()
         breaches = [b.get("Name") for b in resp.json()]
         return self.result(indicator, SourceStatus.info,
                            f"appears in {len(breaches)} known breach(es); account takeover is possible",
-                           severity="low", details={"breaches": breaches[:20]}, link=link)
+                           severity="low", details={"breaches": breaches[:20]})

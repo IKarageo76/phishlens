@@ -23,6 +23,10 @@ class URLScan(Enricher):
     def api_key(self) -> str:
         return self.settings.urlscan_api_key
 
+    def page_url(self, indicator: Indicator) -> str | None:
+        host = urlsplit(indicator.value).hostname if indicator.type == IndicatorType.url else indicator.value
+        return f"https://urlscan.io/domain/{host}" if host else None
+
     async def lookup(self, indicator: Indicator, client: httpx.AsyncClient) -> SourceResult:
         if indicator.type == IndicatorType.url:
             host = urlsplit(indicator.value).hostname or indicator.value
@@ -49,8 +53,9 @@ class URLScan(Enricher):
             "malicious_scans": len(malicious),
         }
         link = f"https://urlscan.io/result/{uuid}/" if uuid else None
+        extra = [{"label": "Screenshot of the latest scan", "url": details["screenshot"]}] if details.get("screenshot") else []
         if malicious:
             return self.result(indicator, SourceStatus.hit, f"{len(malicious)} of {len(hits)} recent scans marked malicious",
-                               severity="high", details=details, link=link)
+                               severity="high", details=details, link=link, extra_links=extra)
         return self.result(indicator, SourceStatus.info, f"{len(hits)} previous scan(s), none marked malicious",
-                           details=details, link=link)
+                           details=details, link=link, extra_links=extra)

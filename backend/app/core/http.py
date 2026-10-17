@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 
 import httpx
 
-USER_AGENT = "PhishLens/0.2 (self-hosted email triage)"
+USER_AGENT = "PhishLens/0.3 (self-hosted email triage)"
 
 
 class UnsafeURLError(ValueError):
@@ -17,10 +17,13 @@ class UnsafeURLError(ValueError):
 
 
 def make_client(timeout: float) -> httpx.AsyncClient:
+    from app.core.evidence import record_response
+
     return httpx.AsyncClient(
         timeout=httpx.Timeout(timeout),
         headers={"User-Agent": USER_AGENT},
         follow_redirects=False,
+        event_hooks={"response": [record_response]},
     )
 
 

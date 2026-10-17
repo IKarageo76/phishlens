@@ -57,6 +57,9 @@ class Spamhaus(Enricher):
     def api_key(self) -> str:
         return self.settings.spamhaus_dqs_key
 
+    def page_url(self, indicator: Indicator) -> str | None:
+        return f"https://check.spamhaus.org/results/?query={indicator.value}"
+
     async def _resolve(self, name: str) -> list[str]:
         resolver = dns.asyncresolver.Resolver()
         resolver.lifetime = 4.0
@@ -65,6 +68,16 @@ class Spamhaus(Enricher):
         except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
             return []
         return [r.address for r in answer]
+
+    def _dns_evidence(self, answers: dict[str, list[str]], indicator: Indicator) -> dict:
+        """DNS queries with the DQS key redacted, plus the raw answers."""
+        zone_q = {"zen": f"{reverse_ip(indicator.value) if indicator.type == IndicatorType.ip else indicator.value}.<key>.zen.dq.spamhaus.net",
+                  "dbl": f"{indicator.value}.<key>.dbl.dq.spamhaus.net",
+                  "zrd": f"{indicator.value}.<key>.zrd.dq.spamhaus.net"}
+        return {
+            "query": "DNS A " + ", ".join(zone_q[z] for z in answers),
+            "raw": {z: (codes or "NXDOMAIN (not listed)") for z, codes in answers.items()},
+        }
 
     async def lookup(self, indicator: Indicator, client: httpx.AsyncClient) -> SourceResult:
         key = self.api_key()
@@ -97,12 +110,12 @@ class Spamhaus(Enricher):
                 found.append((f"first seen on the internet within the last {last} hour(s)", "medium"))
 
         if not found:
-            return self.result(indicator, SourceStatus.clean, "not listed")
+            return self.result(indicator, SourceStatus.clean, "not listed", **self._dns_evidence(answers, indicator))
         severity = max((sev for _, sev in found), key=_RANK.get)
         blocklist = [sev for label, sev in found if not label.startswith("first seen")]
         block_severity = max(blocklist, key=_RANK.get) if blocklist else "none"
         return self.result(
             indicator, SourceStatus.hit, "; ".join(label for label, _ in found), severity=severity,
             details={"codes": codes, "zrd_hours": zrd_hours, "block_severity": block_severity, "lists": sorted(answers)},
-            link=f"https://check.spamhaus.org/results/?query={indicator.value}",
+            **self._dns_evidence(answers, indicator),
         )

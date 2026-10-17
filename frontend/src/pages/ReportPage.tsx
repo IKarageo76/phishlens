@@ -3,6 +3,7 @@ import { ArrowLeft, Download, FileText, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button, CopyButton, cx, Empty, ExternalLink, LinkButton, Panel, StatusChip, Tag } from "../components/ui";
+import { EvidenceSection } from "../components/Evidence";
 import { VerdictPanel } from "../components/Verdict";
 import { api } from "../lib/api";
 import { bytes, defang, inputTypeText, sourceTitle } from "../lib/format";
@@ -44,7 +45,7 @@ export function ReportPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink">
+          <Link to="/" className="no-print inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink">
             <ArrowLeft size={15} /> New check
           </Link>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight break-words">{isEml ? r.title : defang(r.title)}</h1>
@@ -52,7 +53,7 @@ export function ReportPage() {
             {inputTypeText[r.input_type]}, checked {new Date(r.created_at).toLocaleString()}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="no-print flex flex-wrap gap-2">
           <CaseNoteCopy id={r.id} />
           <LinkButton href={api.caseNoteUrl(r.id)} download><FileText size={15} /> Case note</LinkButton>
           <LinkButton href={api.iocsUrl(r.id)} download><Download size={15} /> IOCs CSV</LinkButton>
@@ -65,7 +66,7 @@ export function ReportPage() {
       <VerdictPanel verdict={r.verdict} signals={r.signals} />
 
       <div>
-        <div role="tablist" className="flex gap-1 overflow-x-auto border-b border-line">
+        <div role="tablist" className="no-print flex gap-1 overflow-x-auto border-b border-line">
           {tabs.filter((t) => t.show).map((t) => (
             <button
               key={t.id}
@@ -90,6 +91,8 @@ export function ReportPage() {
           {tab === "raw" && r.headers && <RawTab h={r.headers} />}
         </div>
       </div>
+
+      <EvidenceSection r={r} />
     </div>
   );
 }
