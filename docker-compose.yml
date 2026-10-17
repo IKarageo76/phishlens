@@ -1,0 +1,35 @@
+# PhishLens: docker compose up -d   then open http://localhost:8080
+name: phishlens
+services:
+  api:
+    build: ./backend
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: sqlite:////app/data/phishlens.db
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - phishlens-data:/app/data
+    depends_on: [redis]
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+
+  web:
+    build: ./frontend
+    ports:
+      - "127.0.0.1:8080:8080"   # localhost only; put a TLS reverse proxy in front for team use
+    depends_on: [api]
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+volumes:
+  phishlens-data:

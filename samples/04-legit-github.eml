@@ -1,0 +1,32 @@
+Subject: [GitHub] A new SSH key was added to your account
+From: "GitHub" <noreply@github.com>
+To: analyst@client-bank.gr
+Date: Mon, 12 Oct 2026 08:14:03 +0000
+Message-ID: <6851762113608266056@mail.local>
+Return-Path: <noreply@github.com>
+Authentication-Results: mx.client-bank.gr; spf=pass smtp.mailfrom=github.com;
+ dkim=pass header.d=github.com; dmarc=pass header.from=github.com
+Received: from out-21.smtp.github.com (out-21.smtp.github.com
+ [192.30.252.204]) by mx.client-bank.gr with ESMTPS id 1000; Mon, 12 Oct 2026
+ 08:14:03 +0000
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="===============6140671172852705019=="
+
+--===============6140671172852705019==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+A new public key was added to your account.
+If you did not add it, review your keys: https://github.com/settings/keys
+
+--===============6140671172852705019==
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+<html><body><p>A new public key was added to your account.</p>
+<p><a href=3D"https://github.com/settings/keys">Review your SSH keys</a></p><=
+/body></html>
+
+--===============6140671172852705019==--

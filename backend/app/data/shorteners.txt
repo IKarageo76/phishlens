@@ -1,0 +1,22 @@
+# URL shorteners and common open-redirect hosts.
+bit.ly
+bitly.com
+tinyurl.com
+t.co
+goo.gl
+ow.ly
+is.gd
+buff.ly
+rebrand.ly
+cutt.ly
+shorturl.at
+rb.gy
+t.ly
+tiny.cc
+s.id
+lnkd.in
+bl.ink
+short.io
+qrco.de
+urlz.fr
+v.gd

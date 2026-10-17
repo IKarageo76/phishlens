@@ -1,0 +1,35 @@
+# Frequently impersonated domains used for lookalike detection.
+# Add your own or client domains with PROTECTED_DOMAINS=example.com,client.gr
+paypal.com
+microsoft.com
+microsoftonline.com
+office.com
+office365.com
+outlook.com
+live.com
+sharepoint.com
+onedrive.com
+apple.com
+icloud.com
+google.com
+gmail.com
+amazon.com
+netflix.com
+facebook.com
+instagram.com
+linkedin.com
+dropbox.com
+docusign.com
+adobe.com
+dhl.com
+fedex.com
+ups.com
+usps.com
+wetransfer.com
+coinbase.com
+binance.com
+booking.com
+airbnb.com
+zoom.us
+slack.com
+github.com

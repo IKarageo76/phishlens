@@ -1,0 +1,48 @@
+@import "@fontsource-variable/schibsted-grotesk";
+@import "@fontsource-variable/jetbrains-mono";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --base: 240 243 247;
+  --panel: 255 255 255;
+  --sunk: 232 236 242;
+  --line: 214 220 229;
+  --ink: 23 32 43;
+  --muted: 88 99 115;
+  --lens: 79 91 213;
+  --bad: 205 43 49;
+  --warn: 178 106 0;
+  --good: 24 128 78;
+  color-scheme: light;
+}
+.dark {
+  --base: 27 36 48;
+  --panel: 34 45 59;
+  --sunk: 22 29 39;
+  --line: 52 64 80;
+  --ink: 230 234 240;
+  --muted: 145 156 172;
+  --lens: 163 172 255;
+  --bad: 240 90 94;
+  --warn: 245 165 36;
+  --good: 72 194 132;
+  color-scheme: dark;
+}
+
+html, body, #root { min-height: 100%; }
+body {
+  @apply bg-base text-ink font-sans antialiased;
+  font-size: 15px;
+  line-height: 1.5;
+}
+:focus-visible { outline: 2px solid rgb(var(--lens)); outline-offset: 2px; border-radius: 4px; }
+::selection { background: rgb(var(--lens) / 0.3); }
+
+.data { @apply font-mono text-[13px]; overflow-wrap: anywhere; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

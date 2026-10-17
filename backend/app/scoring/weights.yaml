@@ -1,0 +1,83 @@
+# PhishLens scoring weights.
+# score = min(100, sum of triggered weights) ; negative weights are trust credits.
+# Bands: 0-29 likely legitimate, 30-59 suspicious, 60-100 malicious.
+# These are starting values: tune them against your own labelled cases.
+
+bands:
+  suspicious: 30
+  malicious: 60
+
+signals:
+  known_malicious:
+    label: Indicator is known malicious
+    weight: 60
+    hard_override: true      # forces a Malicious verdict regardless of credits
+  phishing_page:
+    label: Linked page previously scanned as phishing
+    weight: 30
+  dmarc_fail:
+    label: DMARC check failed
+    weight: 30
+  lookalike_domain:
+    label: Lookalike of a protected or well-known domain
+    weight: 30
+  disposable_sender:
+    label: Sender uses a disposable mailbox service
+    weight: 20
+  young_domain:
+    label: Domain registered less than 30 days ago
+    weight: 20
+  deceptive_link:
+    label: Link text shows a different domain than the real target
+    weight: 20
+  auth_fail:
+    label: SPF or DKIM failed
+    weight: 15
+  reply_to_mismatch:
+    label: Replies go to a different domain than the sender
+    weight: 15
+  ip_abuse:
+    label: Sending or linked IP has abuse reports (score 50+)
+    weight: 15
+  risky_attachment:
+    label: Risky attachment type or disguised file
+    weight: 15
+  newish_domain:
+    label: Domain registered less than 90 days ago
+    weight: 10
+  vt_suspicious:
+    label: Some security engines flag an indicator
+    weight: 10
+  shortener:
+    label: Link uses a URL shortener
+    weight: 10
+  bec_language:
+    label: Payment-change or urgent money request language
+    weight: 15
+  brand_display_name:
+    label: Display name uses a brand the sender domain does not belong to
+    weight: 15
+  risky_tld:
+    label: Domain on a TLD heavily abused for phishing
+    weight: 10
+  freemail_impersonation:
+    label: Free-mail sender posing as a company or brand
+    weight: 10
+  no_mail_auth:
+    label: Sender domain publishes neither SPF nor DMARC
+    weight: 10
+  lookalike_tld:
+    label: Same brand name on an unusual TLD
+    weight: 10
+  display_name_spoof:
+    label: Display name shows a different address than the real sender
+    weight: 15
+  return_path_mismatch:
+    label: Bounce address on another domain while authentication did not pass
+    weight: 5
+  trust_authenticated:
+    label: "Trust credit: SPF, DKIM and DMARC pass on an established domain"
+    weight: -15
+  trust_established_domain:
+    label: "Trust credit: established domain with enforced DMARC"
+    weight: -10
