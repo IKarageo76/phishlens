@@ -1,0 +1,21 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Steps to reproduce, what you expected, what you got. Never paste real phishing emails, client data or API keys.
+    validations: { required: true }
+  - type: input
+    id: version
+    attributes:
+      label: PhishLens version
+      placeholder: v0.4.0
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Output of `docker compose logs api` (remove any keys or addresses first).
+      render: text

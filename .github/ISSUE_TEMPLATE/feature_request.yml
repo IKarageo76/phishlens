@@ -1,0 +1,13 @@
+name: Feature or new source
+description: Suggest an improvement or a new intelligence source
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help your triage?
+    validations: { required: true }
+  - type: input
+    id: source
+    attributes:
+      label: Source name and API docs link (if it is a new source)
