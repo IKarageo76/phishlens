@@ -2,7 +2,9 @@
 
 **Self-hosted phishing triage for SOC analysts.** Paste a sender address, domain, URL, IP or hash, or drop the `.eml` a user reported. PhishLens queries every source at once and returns one verdict, and it shows exactly which evidence produced each point of the score.
 
-![Report for a credential-phishing email](docs/screenshots/report-dark.png)
+![PhishLens home](docs/screenshots/home-neon.png)
+
+![Report for a credential-phishing email](docs/screenshots/report-neon.png)
 
 Triage of a reported email usually means 8 to 12 browser tabs: VirusTotal, urlscan, MXToolbox, AbuseIPDB, WHOIS, header analyzers. Then the result gets copied into a ticket by hand. PhishLens does that fan-out in one request and writes the case note for you.
 
@@ -61,6 +63,12 @@ The score starts at 0, and only evidence moves it. Each triggered signal adds it
 - A confirmed malicious URL, hash or IOC (URLhaus, ThreatFox, MalwareBazaar, or VirusTotal with 3+ engines) is a **hard override**: the verdict is Malicious whatever the credits.
 - Weights live in [`backend/app/scoring/weights.yaml`](backend/app/scoring/weights.yaml). Tune them against your own labelled cases.
 - Confidence reflects how many sources actually ran.
+
+## Themes
+
+Three themes, switched from the top-right button and remembered per browser: **Neon** (default), **Dark** and **Light**. Printing always uses a clean light layout.
+
+The neon background is original artwork drawn in code. To blend in your own photo, put a JPEG you have the rights to at `frontend/public/backgrounds/custom.jpg` and rebuild the web container.
 
 ## Evidence for every verdict
 
@@ -133,7 +141,8 @@ cd frontend && npm install && npm run dev
 
 - **v0.1:** sender and .eml analysis, explainable score, case-note export, Docker.
 - **v0.2:** 8 more sources (15 in total), deeper sender-address checks, IP and address panels.
-- **v0.3 (this release):** evidence section with raw results, check times and verification links; print/PDF view; evidence in the case note.
+- **v0.3:** evidence section with raw results, check times and verification links; print/PDF view; evidence in the case note.
+- **v0.4 (this release):** neon theme with original background art, theme switch (Neon, Dark, Light).
 - **v0.4:** searchable history, `.msg` support, login (local accounts or OIDC).
 - **v1.0:** Sentinel, Defender and QRadar lookups for the same sender across the tenant, opt-in sandbox submission, STIX/MISP export.
 

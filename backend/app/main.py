@@ -41,7 +41,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="PhishLens",
-    version="0.3.0",
+    version="0.4.0",
     description="Self-hosted email triage: one input, every source, one explainable verdict.",
     lifespan=lifespan,
 )

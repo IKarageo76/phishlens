@@ -1,10 +1,14 @@
 @import "@fontsource-variable/schibsted-grotesk";
 @import "@fontsource-variable/jetbrains-mono";
+@import "@fontsource/chakra-petch/500.css";
+@import "@fontsource/chakra-petch/600.css";
+@import "@fontsource/chakra-petch/700.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ---------- Light ---------- */
 :root {
   --base: 240 243 247;
   --panel: 255 255 255;
@@ -16,8 +20,11 @@
   --bad: 205 43 49;
   --warn: 178 106 0;
   --good: 24 128 78;
+  --panel-alpha: 1;
   color-scheme: light;
 }
+
+/* ---------- Dark ---------- */
 .dark {
   --base: 27 36 48;
   --panel: 34 45 59;
@@ -32,6 +39,22 @@
   color-scheme: dark;
 }
 
+/* ---------- Neon (default) ---------- */
+.neon {
+  --base: 4 7 18;        /* #040712 deep space navy */
+  --panel: 9 17 36;      /* glass panel tint */
+  --sunk: 3 8 20;
+  --line: 26 58 96;      /* cyan-steel hairline */
+  --ink: 224 240 255;
+  --muted: 125 156 192;
+  --lens: 0 229 255;     /* electric cyan */
+  --violet: 124 92 255;  /* secondary glow */
+  --bad: 255 59 92;      /* neon red */
+  --warn: 255 184 0;     /* amber */
+  --good: 43 255 136;    /* signal green */
+  color-scheme: dark;
+}
+
 html, body, #root { min-height: 100%; }
 body {
   @apply bg-base text-ink font-sans antialiased;
@@ -42,19 +65,94 @@ body {
 ::selection { background: rgb(var(--lens) / 0.3); }
 
 .data { @apply font-mono text-[13px]; overflow-wrap: anywhere; }
+.font-display { font-family: "Chakra Petch", "Schibsted Grotesk Variable", system-ui, sans-serif; }
+
+/* ---------- Neon surface treatment ---------- */
+.neon body { background: rgb(var(--base)); }
+.neon h1, .neon h2, .neon h3 { font-family: "Chakra Petch", "Schibsted Grotesk Variable", system-ui, sans-serif; letter-spacing: 0.01em; }
+
+/* Glass panels: everything drawn with bg-panel becomes translucent over the scene */
+.neon .bg-panel {
+  background-color: rgb(var(--panel) / 0.72);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+}
+.neon section.rounded-lg.border {
+  border-color: rgb(var(--lens) / 0.22);
+  box-shadow: 0 0 0 1px rgb(var(--lens) / 0.04) inset, 0 10px 40px -18px rgb(var(--lens) / 0.35);
+}
+.neon .bg-sunk { background-color: rgb(var(--sunk) / 0.75); }
+
+/* Primary actions glow */
+.neon .bg-lens { box-shadow: 0 0 18px rgb(var(--lens) / 0.45), 0 0 2px rgb(var(--lens)); }
+.neon .bg-lens:hover { box-shadow: 0 0 26px rgb(var(--lens) / 0.65), 0 0 2px rgb(var(--lens)); }
+
+/* Verdict glow on the big score */
+.neon .glow-bad { text-shadow: 0 0 24px rgb(var(--bad) / 0.65); }
+.neon .glow-warn { text-shadow: 0 0 24px rgb(var(--warn) / 0.6); }
+.neon .glow-good { text-shadow: 0 0 24px rgb(var(--good) / 0.55); }
+.neon .bar-glow { box-shadow: 0 0 14px rgb(var(--glow-color, var(--lens)) / 0.55); }
+
+/* Hero headline */
+.neon .neon-title {
+  background: linear-gradient(92deg, rgb(255 255 255) 0%, rgb(var(--lens)) 55%, rgb(var(--violet)) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 18px rgb(var(--lens) / 0.35));
+}
+
+/* The search console */
+.neon .console {
+  border-color: rgb(var(--lens) / 0.45);
+  box-shadow: 0 0 0 1px rgb(var(--lens) / 0.12) inset, 0 0 40px -6px rgb(var(--lens) / 0.45);
+}
+.neon .console:focus-within {
+  border-color: rgb(var(--lens));
+  box-shadow: 0 0 0 1px rgb(var(--lens) / 0.3) inset, 0 0 56px -4px rgb(var(--lens) / 0.6);
+}
+
+/* One orchestrated moment: a scan line sweeps the hero once on load */
+@keyframes scan {
+  0% { transform: translateY(-10%); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translateY(560px); opacity: 0; }
+}
+.neon .hero-scan {
+  position: absolute; left: 0; right: 0; top: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgb(var(--lens) / 0.9), transparent);
+  box-shadow: 0 0 22px rgb(var(--lens) / 0.8);
+  animation: scan 2.4s ease-out 0.2s 1 both;
+  pointer-events: none;
+}
+.hero-scan { display: none; }
+.hero-art { display: none; }
+@media (min-width: 1024px) {
+  .neon .hero-art {
+    display: block;
+    filter: drop-shadow(0 0 40px rgb(0 229 255 / 0.15));
+    -webkit-mask-image: linear-gradient(to bottom, black 78%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 78%, transparent 100%);
+  }
+}
+.neon .hero-scan { display: block; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
+/* ---------- Print: always a clean light page ---------- */
 @media print {
-  :root, .dark {
+  :root, .dark, .neon {
     --base: 255 255 255; --panel: 255 255 255; --sunk: 244 246 249; --line: 210 216 225;
     --ink: 20 24 31; --muted: 80 90 104; --lens: 40 60 180;
     --bad: 190 30 36; --warn: 150 90 0; --good: 20 120 70;
     color-scheme: light;
   }
-  .no-print { display: none !important; }
+  .no-print, .scene { display: none !important; }
+  .neon .bg-panel { backdrop-filter: none; background: #fff; }
+  .neon section.rounded-lg.border { box-shadow: none; }
+  .neon [class*="glow-"] { text-shadow: none; }
   body { font-size: 11pt; }
   main { padding: 0 !important; max-width: none !important; }
   section { border-color: rgb(var(--line)) !important; }

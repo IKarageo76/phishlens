@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.4.0 (2026-10-17)
+
+- Neon theme, now the default: deep navy, electric cyan, glass panels, glowing verdicts
+- Original background art in code: threat constellation, perspective grid, hero illustration
+  of an analyst at a laptop under a shield with threat markers
+- Theme switch cycles Neon, Dark and Light; print stays light
+- Optional custom background photo slot (`frontend/public/backgrounds/custom.jpg`)
+- Chakra Petch display font for headings and the score
+
 ## v0.3.0 (2026-10-17)
 
 - Evidence section on every report: per source and indicator, the result as returned, key fields,

@@ -23,7 +23,7 @@ function ScoreBar({ signals, score, tone, active }: { signals: Signal[]; score: 
   const credit = Math.max(0, cum - score);
   return (
     <div className="relative pt-1 pb-6" aria-hidden>
-      <div className="relative h-3.5 rounded-sm bg-sunk overflow-hidden">
+      <div className="relative h-3.5 rounded-sm bg-sunk overflow-hidden bar-glow" style={{ ["--glow-color" as string]: `var(--${tone})` }}>
         {segments.map(({ s, i, start, width }) =>
           width > 0 ? (
             <div
@@ -63,10 +63,10 @@ export function VerdictPanel({ verdict, signals }: { verdict: Verdict; signals: 
       <div className="grid md:grid-cols-[220px_1fr]">
         <div className="p-5 md:border-r border-b md:border-b-0 border-line">
           <div className="flex items-baseline gap-1">
-            <span className={cx("text-[64px] leading-none font-semibold tracking-tight tabular-nums", toneText[tone])}>{verdict.score}</span>
+            <span className={cx("font-display text-[68px] leading-none font-semibold tabular-nums", toneText[tone], `glow-${tone}`)}>{verdict.score}</span>
             <span className="text-muted">/100</span>
           </div>
-          <p className={cx("mt-2 text-xl font-semibold", toneText[tone])}>{verdictText[verdict.label]}</p>
+          <p className={cx("font-display mt-2 text-xl font-semibold", toneText[tone], `glow-${tone}`)}>{verdictText[verdict.label]}</p>
           <p className="mt-3 text-sm text-muted">
             Confidence {verdict.confidence}: {verdict.sources_run} of {total} sources ran.
             {verdict.confidence !== "high" && verdict.sources_skipped > 0 && " Add API keys to check more."}

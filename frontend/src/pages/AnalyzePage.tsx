@@ -3,6 +3,7 @@ import { FileUp, Loader2, Search } from "lucide-react";
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button, cx, Empty } from "../components/ui";
+import { HeroArt } from "../components/HeroArt";
 import { VerdictDot } from "../components/Verdict";
 import { api } from "../lib/api";
 import { inputTypeText, timeAgo, verdictText } from "../lib/format";
@@ -53,8 +54,11 @@ export function AnalyzePage() {
   };
 
   return (
-    <div className="max-w-3xl">
-      <h1 className="text-[28px] sm:text-[34px] leading-tight font-semibold tracking-tight">Is this email safe?</h1>
+    <div>
+     <div className="relative grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="hero-scan" aria-hidden />
+      <div className="min-w-0 max-w-3xl py-2 lg:py-8">
+      <h1 className="neon-title text-[34px] sm:text-[46px] leading-[1.05] font-bold">Is this email safe?</h1>
       <p className="mt-2 text-muted max-w-xl">
         Paste just the sender's address to check who is behind it. You can also check a domain, link, IP or file
         hash, or drop the whole .eml file for the full picture.
@@ -65,7 +69,7 @@ export function AnalyzePage() {
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
         className={cx(
-          "mt-7 rounded-lg border bg-panel transition-colors",
+          "console mt-7 rounded-lg border bg-panel transition-[border-color,box-shadow]",
           dragging ? "border-lens ring-2 ring-lens/30" : "border-line focus-within:border-lens",
         )}
       >
@@ -86,7 +90,7 @@ export function AnalyzePage() {
                 submit();
               }
             }}
-            placeholder="security@micros0ft-alerts.com"
+            placeholder="security@micros0ft.com"
             className={cx(
               "flex-1 resize-none bg-transparent outline-none focus-visible:outline-none py-2 placeholder:text-muted/60",
               value.includes("\n") ? "data" : "text-[17px]",
@@ -133,7 +137,11 @@ export function AnalyzePage() {
         </p>
       )}
 
-      <section className="mt-12">
+      </div>
+      <HeroArt className="hero-art w-full max-w-[420px] justify-self-end" />
+     </div>
+
+      <section className="mt-12 max-w-3xl">
         <h2 className="text-[15px] font-semibold mb-3">Recent checks</h2>
         {recent.isError && <Empty>Recent checks are unavailable: {recent.error.message}</Empty>}
         {recent.data?.length === 0 && <Empty>Nothing checked yet. Results are kept for the retention period, then deleted.</Empty>}

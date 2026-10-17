@@ -31,7 +31,7 @@ class SafeBrowsing(Enricher):
 
     async def lookup(self, indicator: Indicator, client: httpx.AsyncClient) -> SourceResult:
         body = {
-            "client": {"clientId": "phishlens", "clientVersion": "0.3.0"},
+            "client": {"clientId": "phishlens", "clientVersion": "0.4.0"},
             "threatInfo": {
                 "threatTypes": list(THREATS),
                 "platformTypes": ["ANY_PLATFORM"],
