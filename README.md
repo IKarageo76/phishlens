@@ -1,5 +1,9 @@
 # PhishLens
 
+[![CI](https://github.com/IKarageo76/phishlens/actions/workflows/ci.yml/badge.svg)](https://github.com/IKarageo76/phishlens/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/IKarageo76/phishlens)](https://github.com/IKarageo76/phishlens/releases)
+
 **Self-hosted phishing triage for SOC analysts.** Paste a sender address, domain, URL, IP or hash, or drop the `.eml` a user reported. PhishLens queries every source at once and returns one verdict, and it shows exactly which evidence produced each point of the score.
 
 ![PhishLens home](docs/screenshots/home-neon.png)
@@ -26,7 +30,7 @@ Every source is optional. A missing key shows as **Not checked** in the report a
 ## Quick start
 
 ```bash
-git clone https://github.com/<you>/phishlens.git && cd phishlens
+git clone https://github.com/IKarageo76/phishlens.git && cd phishlens
 cp .env.example .env        # add whichever API keys you have
 docker compose up -d --build
 ```
