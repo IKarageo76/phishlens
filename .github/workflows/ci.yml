@@ -41,7 +41,7 @@ jobs:
       - name: Build images
         run: docker compose build
       - name: Scan API image
-        uses: aquasecurity/trivy-action@0.35.0  # 0.35.0 is the immutable release; unprefixed 0.x tags were hijacked in March 2026
+        uses: aquasecurity/trivy-action@v0.36.0  # 0.35.0 is the immutable release; unprefixed 0.x tags were hijacked in March 2026
         with:
           image-ref: phishlens-api
           severity: CRITICAL,HIGH
